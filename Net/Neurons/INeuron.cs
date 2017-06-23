@@ -14,7 +14,5 @@ namespace Net
         void ResetDerrivates();
         List<Link> Inputs { get; set; }
         List<Link> Outputs { get; set; }
-        double GetDerrivateW(double w, double value);
-        double GetDerrivateV(double w, double value);
     }
 }

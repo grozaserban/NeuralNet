@@ -8,8 +8,6 @@ namespace Net.Neurons
     {
         private double? value = null;
         private double? derrivate = null;
-        private double lastInputsValuesSum = 0;
-        private double lastInputsWeightsSum = 0;
 
         public List<Link> Inputs { get; set; } = new List<Link>();
 
@@ -37,9 +35,7 @@ namespace Net.Neurons
             {
                 if (!value.HasValue)
                 {
-                    lastInputsValuesSum = Inputs.Select(link => link.Value()).Sum();
-                    lastInputsWeightsSum = Inputs.Select(link => link.Weight).Sum();
-                    value = Formulas.Sigmoid(lastInputsValuesSum / lastInputsWeightsSum);
+                    value = Formulas.Sigmoid(GetSumOfInputs);
                 }
 
                 return value.Value;
@@ -69,14 +65,6 @@ namespace Net.Neurons
             derrivate = null;
         }
 
-        public double GetDerrivateW(double w, double value)
-        {
-            return (lastInputsWeightsSum * value - lastInputsValuesSum) / Math.Pow(lastInputsWeightsSum, 2);
-        }
-
-        public double GetDerrivateV(double w, double value)
-        {
-            return w / lastInputsWeightsSum;
-        }
+        private double GetSumOfInputs => Inputs.Select(link => link.Value()).Sum();
     }
 }

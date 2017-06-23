@@ -64,13 +64,13 @@ namespace NetTest
                 new List<double>(){ 0.1, 0.9, 0.1 },
                 new List<double>(){ 0.1, 0.1, 0.9 },
             };
-            Link.Step = 0.2;
-            var sut = new NeuralNet(2, 30, inputs[0], expectedResults[0]);
+            Link.RenewalFactor = 0.00001;
+            Link.Step = 5;
+            var sut = new NeuralNet(1, 10, inputs[0], expectedResults[0]);
 
             Debug.WriteLine("Performance is: " + sut.CalculatePerformance());
             var iterations = sut.Train(inputs, expectedResults, -0.01);
 
-            
             sut.PrintWeights(@"C:\Users\Serban\Pictures\LeafsVeins\Test3.txt", iterations);
             Debug.WriteLine("Done");
         }
@@ -91,7 +91,6 @@ namespace NetTest
                 new List<double>(){ 0.1, 0.9, 0.1 },
                 new List<double>(){ 0.1, 0.1, 0.9 },
             };
-
 
             for (int i = 1; i < 4; i++)
             {
@@ -133,7 +132,6 @@ namespace NetTest
                 new List<double>(){ 0.1, 0.1, 0.9 },
             };
 
-
             for (int i = 1; i < 4; i++)
             {
                 Link.Step = 5 * i;
@@ -174,33 +172,31 @@ namespace NetTest
                 new List<double>(){ 0.1, 0.1, 0.9 },
             };
 
-       //     var sut = new NeuralNet(2, 30, inputs[0], expectedResults[0]);
+            //     var sut = new NeuralNet(2, 30, inputs[0], expectedResults[0]);
 
-      //      Debug.WriteLine("Performance is: " + sut.CalculatePerformance());
+            //      Debug.WriteLine("Performance is: " + sut.CalculatePerformance());
 
-           // for (int i = -1; i < 4; i++)
-                for (int j = -2; j < 2; j++)
-                {
-                    Link.Step = 5 * Math.Pow(10, 0);
-                    Link.RenewalFactor = 0.000003 * Math.Pow(10, j);
-                    var iterations = new NeuralNet(2, 30, inputs[0], expectedResults[0]).TrainSlow(inputs, expectedResults, -0.01);
+            // for (int i = -1; i < 4; i++)
+            for (int j = -2; j < 2; j++)
+            {
+                Link.Step = 5 * Math.Pow(10, 0);
+                Link.RenewalFactor = 0.000003 * Math.Pow(10, j);
+                var iterations = new NeuralNet(2, 30, inputs[0], expectedResults[0]).TrainSlow(inputs, expectedResults, -0.01);
 
+                File.AppendAllText(@"C:\Users\Serban\Pictures\LeafsVeins\Test32.txt",
+                    "Iterations: " + iterations +
+                    " Step: " + Link.Step +
+                    " Renewal: " + Link.RenewalFactor + Environment.NewLine);
 
-                    File.AppendAllText(@"C:\Users\Serban\Pictures\LeafsVeins\Test32.txt",
-                        "Iterations: " + iterations + 
-                        " Step: " + Link.Step + 
-                        " Renewal: " + Link.RenewalFactor + Environment.NewLine);
-                   
-                    Link.Step *= 5;
-                    Link.RenewalFactor *= 5;
-                    iterations = new NeuralNet(2, 30, inputs[0], expectedResults[0]).TrainSlow(inputs, expectedResults, -0.01);
+                Link.Step *= 5;
+                Link.RenewalFactor *= 5;
+                iterations = new NeuralNet(2, 30, inputs[0], expectedResults[0]).TrainSlow(inputs, expectedResults, -0.01);
 
-
-                    File.AppendAllText(@"C:\Users\Serban\Pictures\LeafsVeins\Test32.txt",
-                        "Iterations: " + iterations +
-                        " Step: " + Link.Step +
-                        " Renewal: " + Link.RenewalFactor + Environment.NewLine);
-                }
+                File.AppendAllText(@"C:\Users\Serban\Pictures\LeafsVeins\Test32.txt",
+                    "Iterations: " + iterations +
+                    " Step: " + Link.Step +
+                    " Renewal: " + Link.RenewalFactor + Environment.NewLine);
+            }
             Debug.WriteLine("Done");
         }
 
@@ -223,7 +219,6 @@ namespace NetTest
 
             var iterations = new NeuralNet(2, 30, inputs[0], expectedResults[0])
                 .TrainParallel(inputs, expectedResults, -0.01);
-
 
             File.AppendAllText(@"C:\Users\Serban\Pictures\LeafsVeins\Test33.txt",
                 "Iterations: " + iterations +
@@ -255,7 +250,7 @@ namespace NetTest
 
             Debug.WriteLine("Performance is: " + sut.CalculatePerformance());
             var iterations = sut.TrainSlow(data.InputValues, data.ExpectedResults, -0.02);
-            
+
             sut.PrintWeights(@"C:\Users\Serban\Pictures\LeafsVeins\Test5.txt", iterations);
             Debug.WriteLine("Done");
         }
@@ -266,6 +261,8 @@ namespace NetTest
             var data = new Reading(@"C:\Users\Serban\Pictures\LeafsVeins\maxPoints.txt");
             data.InputValues = data.InputValues.GetRange(0, 22);
 
+            Link.RenewalFactor = 0.00001;
+            Link.Step = 5;
             var sut = new NeuralNet(3, 30, data.InputValues[0], data.ExpectedResults[0]);
 
             Debug.WriteLine("Performance is: " + sut.CalculatePerformance());
@@ -276,19 +273,138 @@ namespace NetTest
         }
 
         [TestMethod]
-        public void TestHogAveragesAdaptive()
+        public void TestHogAverages()
         {
-            var data = new Reading(@"C:\Users\Serban\Pictures\LeafHogs\HistogramsDouble.txt");
+            var data = new Reading(@"C:\Users\Serban\Pictures\LeafHogs\HistogramsAveragesDouble.txt");
 
-       //     Link.RenewalFactor = 0.000003;
-            Link.Step = 0.2;
+            //     Link.RenewalFactor = 0.000003;
+            //    Link.Step = 0.2;
+            Link.RenewalFactor = 0.00001;
+            Link.Step = 5;
             var sut = new NeuralNet(2, 10, data.InputValues[0], data.ExpectedResults[0]);
 
             Debug.WriteLine("Performance is: " + sut.CalculatePerformance());
-            var iterations = sut.TrainSlow(data.InputValues, data.ExpectedResults, -0.02);
+            var iterations = sut.Train(data.InputValues, data.ExpectedResults, -0.02);
 
-            sut.PrintWeights(@"C:\Users\Serban\Pictures\LeafHogs\TestHogAveragesAdaptive.txt", iterations);
+            sut.PrintWeights(@"C:\Users\Serban\Pictures\LeafHogs\TestHistogramsAveragesDouble.txt", iterations);
             Debug.WriteLine("Done");
+        }
+
+        [TestMethod]
+        public void TestHog()
+        {
+            var data = new Reading(@"C:\Users\Serban\Pictures\LeafHogs\HistogramsDouble.txt");
+
+            Link.RenewalFactor = 0.00001;
+            Link.Step = 5;
+            var sut = new NeuralNet(3, 20, data.InputValues[0], data.ExpectedResults[0]);
+
+            Debug.WriteLine("Performance is: " + sut.CalculatePerformance());
+            var iterations = sut.Train(data.InputValues, data.ExpectedResults, -0.02);
+
+            sut.PrintWeights(@"C:\Users\Serban\Pictures\LeafHogs\TestHistogramsDouble.txt", iterations);
+            Debug.WriteLine("Done");
+        }
+
+        [TestMethod]
+        public void TestHogAux()
+        {
+            var data = new Reading(@"C:\Users\Serban\Pictures\LeafHogs\testData\data0.txt");
+
+            Link.RenewalFactor = 0.00001;
+            Link.Step = 0.05;
+            var sut = new NeuralNet(2, 20, data.InputValues[0], data.ExpectedResults[0]);
+
+            Debug.WriteLine("Performance is: " + sut.CalculatePerformance());
+            var iterations = sut.TrainAdaptive(data.InputValues, data.ExpectedResults, -0.02);
+
+            //        sut.PrintWeights(@"C:\Users\Serban\Pictures\LeafHogs\TestHistogramsDouble.txt", iterations);
+            Debug.WriteLine("Done");
+        }
+
+        [TestMethod]
+        public void TestHogOnAllAverages()
+        {
+            var testResultsPath = @"C:\Users\Serban\Pictures\LeafHogs\testData\zAverageTestsPerformance.txt";
+            var confidencePath = @"C:\Users\Serban\Pictures\LeafHogs\testData\zAverageTestsConfidence.txt";
+            for (int i = 0; i < 10; i++) // number of data sets
+            {
+                var path = @"C:\Users\Serban\Pictures\LeafHogs\testData\average" + i + ".txt";
+                var data = new Reading(path);
+
+                Link.RenewalFactor = 0.00001;
+                Link.Step = 0.5;
+                var sut = new NeuralNet(2, 10, data.InputValues[0], data.ExpectedResults[0]);
+
+                var iterations = sut.TrainAdaptive(data.InputValues, data.ExpectedResults, -0.005); //put iteration limit?
+
+                sut.PrintWeights(@"C:\Users\Serban\Pictures\LeafHogs\testData\trainedOnAverageWeights" + i + ".txt", iterations);
+
+                var testDataPath = @"C:\Users\Serban\Pictures\LeafHogs\testData\test" + i + ".txt";
+                var testData = new Reading(testDataPath);
+
+                string results = (i + 1).ToString() + " ";
+                string confidence = (i + 1).ToString() + " ";
+
+                for (int testSet = 0; testSet < testData.InputValues.Count; testSet++)
+                {
+                    sut.ChangeData(testData.InputValues[testSet], testData.ExpectedResults[testSet]);
+                    results += sut.CalculatePerformance() + " ";
+                    confidence += sut.CalculateConfidence() + " ";
+                }
+
+                results += Environment.NewLine;
+                confidence += Environment.NewLine;
+
+                File.AppendAllText(testResultsPath, results);
+                File.AppendAllText(confidencePath, confidence);
+            }
+        }
+
+        [TestMethod]
+        public void TestHogOnAllData()
+        {
+            var testResultsPath = @"C:\Users\Serban\Pictures\LeafHogs\testData\zDataTestsPerformance.txt";
+            var confidencePath = @"C:\Users\Serban\Pictures\LeafHogs\testData\zDataTestsConfidence.txt";
+            for (int i = 9; i < 10; i++) // number of data sets
+            {
+                var path = @"C:\Users\Serban\Pictures\LeafHogs\testData\data" + i + ".txt";
+                var data = new Reading(path);
+
+                Link.Step = 0.1;
+                var sut = new NeuralNet(2, 10, data.InputValues[0], data.ExpectedResults[0]);
+
+                var iterations = sut.TrainAdaptive(data.InputValues, data.ExpectedResults, -0.00005, 250000); //put iteration limit?
+
+                sut.PrintWeights(@"C:\Users\Serban\Pictures\LeafHogs\testData\trainedOnData" + i + ".txt", iterations);
+
+                var testDataPath = @"C:\Users\Serban\Pictures\LeafHogs\testData\test" + i + ".txt";
+                var testData = new Reading(testDataPath);
+
+                string results = (i + 1).ToString() + " ";
+                string confidence = (i + 1).ToString() + " ";
+
+                for (int testSet = 0; testSet < testData.InputValues.Count; testSet++)
+                {
+                    sut.ChangeData(testData.InputValues[testSet], testData.ExpectedResults[testSet]);
+                    results += sut.CalculatePerformance() + " ";
+                    confidence += sut.CalculateConfidence() + " ";
+                }
+
+                results += Environment.NewLine;
+                confidence += Environment.NewLine;
+
+                File.AppendAllText(testResultsPath, results);
+                File.AppendAllText(confidencePath, confidence);
+            }
+        }
+
+        [TestMethod]
+        public void TestCreateTestData()
+        {
+            var data = new Reading(@"C:\Users\Serban\Pictures\LeafHogs\HistogramsDouble10.txt");
+
+            data.CreateTestData(@"C:\Users\Serban\Pictures\LeafHogs\testData\");
         }
     }
 }

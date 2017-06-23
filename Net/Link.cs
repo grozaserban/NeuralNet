@@ -30,7 +30,6 @@
 
         public void AdjustWeight()
         {
-            // var adjustment = Step * end.Derrivate * start.Value;
             if (RandomNumberProvider.Next() < RenewalFactor)
             {
                 Weight = RandomNumberProvider.Next();
@@ -58,14 +57,13 @@
 
         private double GetAdjustment()
         {
-            return Step * end.GetDerrivateW(Weight, start.Value) * end.Derrivate;
+            return Step * end.Derrivate * start.Value;
         }
 
         public double Derrivate()
         {
             if (!derrivate.HasValue)
-                // first variantderrivate = end.Derrivate * Weight;  // second thoughts? derrivate = end.Derrivate * start.Value;
-                derrivate = end.GetDerrivateV(Weight, start.Value) * end.Derrivate;
+                derrivate = end.Derrivate * Weight;
 
             return derrivate.Value;
         }

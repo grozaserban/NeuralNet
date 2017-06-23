@@ -8,8 +8,6 @@ namespace Net
     {
         private double? value = null;
         private double? derrivate = null;
-        private double lastInputsValuesSum = 0;
-        private double lastInputsWeightsSum = 0;
 
         public List<Link> Inputs { get; set; } = new List<Link>();
 
@@ -21,9 +19,7 @@ namespace Net
             {
                 if (!value.HasValue)
                 {
-                    lastInputsValuesSum = Inputs.Select(link => link.Value()).Sum();
-                    lastInputsWeightsSum = Inputs.Select(link => link.Weight).Sum();
-                    value = Formulas.Sigmoid(lastInputsValuesSum / lastInputsWeightsSum);
+                    value = Formulas.Sigmoid(GetSumOfInputs);
                 }
                 return value.Value;
             }
@@ -40,19 +36,6 @@ namespace Net
             }
         }
 
-        public double GetDerrivateW(double w, double value)
-        {
-            var d = lastInputsWeightsSum - w;
-            var c = lastInputsValuesSum - value;
-            return (value * d - c) / Math.Pow(lastInputsWeightsSum, 2);
-//            return (lastInputsWeightsSum * value - lastInputsValuesSum) / Math.Pow(lastInputsWeightsSum, 2);
-        }
-
-        public double GetDerrivateV(double w, double value)
-        {
-            return w / lastInputsWeightsSum;
-        }
-
         public void ResetValues()
         {
             value = null;
@@ -62,5 +45,7 @@ namespace Net
         {
             derrivate = null;
         }
+
+        private double GetSumOfInputs => Inputs.Select(link => link.Value()).Sum();
     }
 }

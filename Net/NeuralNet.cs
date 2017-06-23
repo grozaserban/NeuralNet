@@ -29,21 +29,11 @@ namespace Net
         public bool TrainIteration(double performanceThreshold)
         {
             var performanceBeforeIteration = CalculatePerformance();
-            //if (performanceBeforeIteration < performanceThreshold/4) //added
-            //{
+            if (!(performanceBeforeIteration > performanceThreshold / 100)) 
                 Learn();
 
-                var performance = CalculatePerformance();
-            //   Debug.WriteLine("Iteration changed performance from: " + performanceBeforeIteration + " to: " + performance + " for values " + _inputs[1].Value + "  "+ _results[0].Value);
-            //    return false;
-            //}
-            //else
-            //{
-            //    Debug.WriteLine("Performance " + performanceBeforeIteration + " is under treshold");
-            //    return true;
-            //}
-            //if (performance < performanceBeforeIteration)
-            //    Debug.Write("notTraining");
+            var performance = CalculatePerformance();
+
             return performanceBeforeIteration >= performanceThreshold;
         }
 
@@ -61,20 +51,49 @@ namespace Net
             int iteration = 0;
             do
             {
-             //   Debug.WriteLine("Iteration: " + iteration++ + " performance:" + CalculatePerformance());
+                var untrained = 0;
                 trained = true;
                 for (int i = 0; i < inputs.Count; i++)
                 {
                     ChangeData(inputs[i], expectedResults[i]);
-                    trained &= TrainIteration(performanceThreshold);
+                    var iterationSuccess = TrainIteration(performanceThreshold);
+                    trained &= iterationSuccess;
+                    if (!iterationSuccess)
+                        untrained++;
                 }
                 iteration++;
                 if (iteration % 100 == 0)
-                    Debug.WriteLine("Performance: " + CalculatePerformance());
+                    Debug.WriteLine("Performance: " + CalculatePerformance() + " untrained images" + untrained);
             } while (!trained);
             Debug.WriteLine("Iteration: " + iteration);
             return iteration;
-//PrintWeights();
+        }
+
+        public int TrainLimited(List<List<double>> inputs, List<List<double>> expectedResults, double performanceThreshold, int maxIterations)
+        {
+            Contract.Equals(inputs.Count, expectedResults.Count);
+            bool trained;
+            int iteration = 0;
+            do
+            {
+                var untrained = 0;
+                trained = true;
+                for (int i = 0; i < inputs.Count; i++)
+                {
+                    ChangeData(inputs[i], expectedResults[i]);
+                    var iterationSuccess = TrainIteration(performanceThreshold);
+                    trained &= iterationSuccess;
+                    if (!iterationSuccess)
+                        untrained++;
+                }
+                iteration++;
+                if (iteration % 100 == 0)
+                    Debug.WriteLine("Performance: " + CalculatePerformance() + " untrained images" + untrained);
+                if (iteration >= maxIterations)
+                    break;
+            } while (!trained);
+            Debug.WriteLine("Iteration: " + iteration);
+            return iteration;
         }
 
 
@@ -115,12 +134,16 @@ namespace Net
             do
             {
                 //   Debug.WriteLine("Iteration: " + iteration++ + " performance:" + CalculatePerformance());
+                var setsTrained = inputs.Count;
                 trained = true;
                 performanceBefore = performance;
                 for (int i = 0; i < inputs.Count; i++)
                 {
                     ChangeData(inputs[i], expectedResults[i]);
-                    trained &= CalculatePerformance() >= performanceThreshold;
+                    var setTrained = CalculatePerformance() >= performanceThreshold;
+                    trained &= setTrained;
+                    if (setTrained)
+                        setsTrained--;
                     UpdateAdjustment();
                 }
                 AdjustCumulatedWeights();
@@ -128,13 +151,56 @@ namespace Net
                 ResetDerrivates();
                 performance = CalculatePerformance();
                 if (performance - performanceBefore < 0.0000001)
+                    Link.RenewalFactor = 0.00003; // deleted a zero
+                else
+                    Link.RenewalFactor = 0.00000000003;
+
+                if (iteration % 1000 == 0)
+                    Debug.WriteLine("Iteration: " + iteration++ + " performance:" + CalculatePerformance() + "Sets trained:" + setsTrained);
+                iteration++;                
+        }
+            while (!trained);
+            Debug.WriteLine("Iteration: " + iteration);
+            return iteration;
+        }
+
+        public int TrainAdaptive(List<List<double>> inputs, List<List<double>> expectedResults, double performanceThreshold, int iterationLimit)
+        {
+            Contract.Equals(inputs.Count, expectedResults.Count);
+            bool trained;
+            int iteration = 0;
+            double performanceBefore = -1;
+            double performance = -1;
+            do
+            {
+                //   Debug.WriteLine("Iteration: " + iteration++ + " performance:" + CalculatePerformance());
+                var setsTrained = inputs.Count;
+                trained = true;
+                performanceBefore = performance;
+                for (int i = 0; i < inputs.Count; i++)
+                {
+                    ChangeData(inputs[i], expectedResults[i]);
+                    var setTrained = CalculatePerformance() >= performanceThreshold;
+                    trained &= setTrained;
+                    if (setTrained)
+                        setsTrained--;
+                    UpdateAdjustment();
+                }
+                AdjustCumulatedWeights();
+                ResetValues();
+                ResetDerrivates();
+                performance = CalculatePerformance();
+                if (performance < performanceBefore && performance - performanceBefore < 0.000000001) //+2
                     Link.RenewalFactor = 0.000003;
                 else
                     Link.RenewalFactor = 0.00000000003;
 
-                if (iteration % 100 == 0)
-                    Debug.WriteLine("Performance: " + CalculatePerformance());
+
                 iteration++;
+                if (iteration % 1000 == 0)
+                    Debug.WriteLine("Iteration: " + iteration++ + " performance:" + CalculatePerformance() + " Sets untrained:" + setsTrained);
+                if (iteration % iterationLimit ==0)
+                    Link.RenewalFactor = 1;
 
             }
             while (!trained);
@@ -240,7 +306,6 @@ namespace Net
          * ***/
         public double CalculatePerformance()
         {
-            //var results = _neurons.Last();
             var performance = 0d;
             for (int i = 0; i < _results.Count; i++)
             {
@@ -248,6 +313,20 @@ namespace Net
             }
             performance /= _results.Count;
             return performance;
+        }
+
+        public double CalculateConfidence()
+        {
+            var wrongConfidence = 0d;
+            var confidence = 0d;
+            for (int i = 0; i < _results.Count; i++)
+            {
+                if(_results[i].ExpectedValue > 0.5)
+                    confidence = _results[i].Value;
+
+                wrongConfidence += _results[i].Value;
+            }
+            return confidence / wrongConfidence;
         }
 
         public void ResetValues()
@@ -330,6 +409,8 @@ namespace Net
                 {
                     link.AdjustWeight();
                 }
+                ResetValues();
+                ResetDerrivates();
             }
         }
 
