@@ -4,8 +4,6 @@ using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Net
 {
@@ -70,7 +68,6 @@ namespace Net
             int iteration = 0;
             do
             {
-                //   Debug.WriteLine("Iteration: " + iteration++ + " performance:" + CalculatePerformance());
                 trained = true;
                 for (int i = 0; i < inputs.Count; i++)
                 {
@@ -125,7 +122,6 @@ namespace Net
             double performance = -1;
             do
             {
-                //   Debug.WriteLine("Iteration: " + iteration++ + " performance:" + CalculatePerformance());
                 var setsTrained = inputs.Count;
                 trained = true;
                 performanceBefore = performance;
@@ -143,7 +139,7 @@ namespace Net
                 net.ResetDerrivates();
                 performance = net.CalculatePerformance();
                 if (performance - performanceBefore < 0.0000001)
-                    Link.RenewalFactor = 0.00003; // deleted a zero
+                    Link.RenewalFactor = 0.00003; 
                 else
                     Link.RenewalFactor = 0.00000000003;
 
@@ -189,8 +185,7 @@ namespace Net
                 if (performanceIncreased && performanceIncreaseUnderThreshold) //+2
                     Link.RenewalFactor = 0.000001;
                 else
-                    Link.RenewalFactor = 0; // 0.0000000000001;
-
+                    Link.RenewalFactor = 0;
 
                 iteration++;
                 if (iteration % 1000 == 0)
@@ -198,13 +193,11 @@ namespace Net
 
                 if (iteration % iterationLimit == 0)
                     Link.RenewalFactor = 1;
-
             }
             while (!trained);
             Debug.WriteLine("Iteration: " + iteration);
             return iteration;
         }
-
 
         public static int TrainAdaptiveWithConfidenceAndPerformance(this NeuralNet net, List<List<double>> inputs, List<List<double>> expectedResults, double performanceThreshold, int iterationLimit, Reading testData)
         {
@@ -239,8 +232,7 @@ namespace Net
                 if (performanceIncreased && performanceIncreaseUnderThreshold) //+2
                     Link.RenewalFactor = 0.000001;
                 else
-                    Link.RenewalFactor = 0; // 0.0000000000001;
-
+                    Link.RenewalFactor = 0; 
 
                 iteration++;
                 if (iteration % 1000 == 0)
@@ -251,7 +243,6 @@ namespace Net
 
                 if (iteration % iterationLimit == 0)
                     Link.RenewalFactor = 1;
-
             }
             while (!trained);
             Debug.WriteLine("Iteration: " + iteration);
@@ -288,6 +279,17 @@ namespace Net
 
             File.AppendAllText(testResultsPath, results);
             File.AppendAllText(confidencePath, confidence);
+        }
+
+        private static bool TrainIteration(this NeuralNet net, double performanceThreshold)
+        {
+            var performanceBeforeIteration = net.CalculatePerformance();
+            if (!(performanceBeforeIteration > performanceThreshold / 100))
+                net.Learn();
+
+            var performance = net.CalculatePerformance();
+
+            return performanceBeforeIteration >= performanceThreshold;
         }
     }
 }
