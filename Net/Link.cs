@@ -11,7 +11,19 @@
         public double Weight { get; private set; }
 
         public static double Step { get; set; } = 5;
-        public static double RenewalFactor { get; set; } = 0.000003; // doesn't work??
+        private static double _renewalFactor = 0.000003;
+        public static double RenewalFactor
+        {
+            get
+            {
+                return _renewalFactor;
+            }
+            set
+            {
+                if (_renewalFactor != value)
+                    _renewalFactor = value;
+            }
+        } 
 
         public Link(INeuron start, INeuron end)
         {

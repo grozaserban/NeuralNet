@@ -16,9 +16,23 @@ namespace Net
             Read(path);
         }
 
+        private Reading()
+        { }
+
+        public static Reading MergeReadings(List<Reading> readings)
+        {
+            var result = new Reading();
+            foreach(var reading in readings)
+            {
+                result.InputValues.AddRange(reading.InputValues);
+                result.ExpectedResults.AddRange(reading.ExpectedResults);
+            }
+            return result;
+        }
+
         private void Read(string path) //@"C:\Users\Serban\Pictures\LeafsVeins\maxPoints.txt"
         {
-            string[] lines = System.IO.File.ReadAllLines(path);
+            string[] lines = File.ReadAllLines(path);
             int categoriesCount = int.Parse(lines[0]);
 
             var linesList = lines.ToList();
@@ -134,6 +148,30 @@ namespace Net
                         expectedResults.RemoveAt(expectedResults.Count - 1);
                     }
                     catch { }
+                }
+            }
+        }
+
+        public static void SplitDataInFiles(string sourcePath, string resultFolderPath, int fold)
+        {
+            var linesList = File.ReadAllLines(sourcePath).ToList();
+            int noOfCategories = int.Parse(linesList[0]);
+            linesList.RemoveAt(0);
+
+            var itemsInCategory = 25;
+
+            for (int i = 0; i < fold; i++)
+            {
+                File.AppendAllText(resultFolderPath + "data" + i + ".txt", noOfCategories + Environment.NewLine);
+            }
+
+            for (int indexInCategory = 0; indexInCategory < itemsInCategory; indexInCategory++)
+            {
+                var path = resultFolderPath + "data" + indexInCategory % fold + ".txt";
+
+                for (int category = 0; category < noOfCategories; category++)
+                {
+                    File.AppendAllText(path, linesList[indexInCategory + category * itemsInCategory] + Environment.NewLine);
                 }
             }
         }

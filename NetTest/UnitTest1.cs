@@ -366,11 +366,11 @@ namespace NetTest
         {
             var testResultsPath = @"C:\Users\Serban\Pictures\LeafHogs\testData\zDataTestsPerformance.txt";
             var confidencePath = @"C:\Users\Serban\Pictures\LeafHogs\testData\zDataTestsConfidence.txt";
-            for (int i = 9; i < 10; i++) // number of data sets
+            for (int i = 0; i < 10; i++) // number of data sets
             {
                 var path = @"C:\Users\Serban\Pictures\LeafHogs\testData\data" + i + ".txt";
                 var data = new Reading(path);
-
+                Link.RenewalFactor=0;
                 Link.Step = 0.1;
                 var sut = new NeuralNet(2, 10, data.InputValues[0], data.ExpectedResults[0]);
 
@@ -400,11 +400,90 @@ namespace NetTest
         }
 
         [TestMethod]
+        public void TestHogOnAllNewData()
+        {
+            var testResultsPath = @"C:\Users\Serban\Pictures\20+\testData\zDataTestsPerformance.txt";
+            var confidencePath = @"C:\Users\Serban\Pictures\20+\testData\zDataTestsConfidence.txt";
+            var folds = 5;
+
+            for (int i = 4; i < folds; i++)
+            {
+                var allData = ReadAllFiles(folds);
+                var testData = allData[i];
+                allData.RemoveAt(i);
+                var data = Reading.MergeReadings(allData);
+
+                Link.RenewalFactor = 0.000003; // maybe decrease
+                Link.Step = 0.05;
+                var sut = new NeuralNet(2, 10, data.InputValues[0], data.ExpectedResults[0]);
+
+                var iterations = sut.TrainAdaptive(data.InputValues, data.ExpectedResults, -0.00005, 1000000);
+
+                sut.PrintWeights(@"C:\Users\Serban\Pictures\20+\testData\trainedOnData" + i + ".txt", iterations);
+
+                string results = (i + 1).ToString() + " ";
+                string confidence = (i + 1).ToString() + " ";
+
+                for (int testSet = 0; testSet < testData.InputValues.Count; testSet++)
+                {
+                    sut.ChangeData(testData.InputValues[testSet], testData.ExpectedResults[testSet]);
+                    results += sut.CalculatePerformance() + " ";
+                    confidence += sut.CalculateConfidence() + " ";
+                }
+
+                results += Environment.NewLine;
+                confidence += Environment.NewLine;
+
+                File.AppendAllText(testResultsPath, results);
+                File.AppendAllText(confidencePath, confidence);
+            }
+        }
+        [TestMethod]
+        public void TestHogOnAllNewDataWithPerformanceAndConfidence()
+        {
+
+            var folds = 5;
+
+            for (int i = 0; i < folds; i++)
+            {
+                var allData = ReadAllFiles(folds);
+                var testData = allData[i];
+                allData.RemoveAt(i);
+                var data = Reading.MergeReadings(allData);
+
+                Link.RenewalFactor = 0.000003; // maybe decrease
+                Link.Step = 0.05;
+                var sut = new NeuralNet(2, 10, data.InputValues[0], data.ExpectedResults[0]);
+
+                var iterations = sut.TrainAdaptiveWithConfidenceAndPerformance(data.InputValues, data.ExpectedResults, -0.00005, 1000000, testData);
+
+                sut.PrintWeights(@"C:\Users\Serban\Pictures\20+\testData\OneLayertrainedOnData" + i + ".txt", iterations);
+            }
+        }
+
+        private List<Reading> ReadAllFiles(int filesCount)
+        {
+            List<Reading> readingList = new List<Reading>();
+            for (int i = 0; i < filesCount; i++)
+            {
+                var path = @"C:\Users\Serban\Pictures\20+\testData\data" + i + ".txt";
+                readingList.Add(new Reading(path));
+            }
+            return readingList;
+        }
+
+        [TestMethod]
         public void TestCreateTestData()
         {
             var data = new Reading(@"C:\Users\Serban\Pictures\LeafHogs\HistogramsDouble10.txt");
 
             data.CreateTestData(@"C:\Users\Serban\Pictures\LeafHogs\testData\");
+        }
+
+        [TestMethod]
+        public void TestCreateTestDataSubsets()
+        {
+            Reading.SplitDataInFiles(@"C:\Users\Serban\Pictures\20+\HistogramsDouble.txt", @"C:\Users\Serban\Pictures\20+\testData\", 5);
         }
     }
 }

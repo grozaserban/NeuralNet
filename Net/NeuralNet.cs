@@ -169,18 +169,20 @@ namespace Net
             Contract.Equals(inputs.Count, expectedResults.Count);
             bool trained;
             int iteration = 0;
-            double performanceBefore = -1;
+            double performanceOnOneBefore = -1;
             double performance = -1;
+            List<double> performances;
             do
             {
-                //   Debug.WriteLine("Iteration: " + iteration++ + " performance:" + CalculatePerformance());
+                performances = new List<double>(inputs.Count);
                 var setsTrained = inputs.Count;
                 trained = true;
-                performanceBefore = performance;
+                performanceOnOneBefore = CalculatePerformance();
                 for (int i = 0; i < inputs.Count; i++)
                 {
+                    performances.Add(CalculatePerformance());
                     ChangeData(inputs[i], expectedResults[i]);
-                    var setTrained = CalculatePerformance() >= performanceThreshold;
+                    var setTrained = performances[i] >= performanceThreshold;
                     trained &= setTrained;
                     if (setTrained)
                         setsTrained--;
@@ -190,16 +192,141 @@ namespace Net
                 ResetValues();
                 ResetDerrivates();
                 performance = CalculatePerformance();
-                if (performance < performanceBefore && performance - performanceBefore < 0.000000001) //+2
-                    Link.RenewalFactor = 0.000003;
+                var performanceIncreased = performance > performanceOnOneBefore;
+                var performanceIncreaseUnderThreshold = performance - performanceOnOneBefore < 0.0000000001;
+                if (performanceIncreased && performanceIncreaseUnderThreshold) //+2
+                    Link.RenewalFactor = 0.000001;
                 else
-                    Link.RenewalFactor = 0.00000000003;
+                    Link.RenewalFactor = 0; // 0.0000000000001;
 
 
                 iteration++;
                 if (iteration % 1000 == 0)
-                    Debug.WriteLine("Iteration: " + iteration++ + " performance:" + CalculatePerformance() + " Sets untrained:" + setsTrained);
+                    Debug.WriteLine("Iteration: " + iteration++ + " performance:" + CalculatePerformance() + "Performance average" + performances.Sum()/performances.Count + " Sets untrained:" + setsTrained);
+
                 if (iteration % iterationLimit ==0)
+                    Link.RenewalFactor = 1;
+
+            }
+            while (!trained);
+            Debug.WriteLine("Iteration: " + iteration);
+            return iteration;
+        }
+
+
+        public int TrainAdaptiveWithConfidenceAndPerformance(List<List<double>> inputs, List<List<double>> expectedResults, double performanceThreshold, int iterationLimit, Reading testData)
+        {
+            Contract.Equals(inputs.Count, expectedResults.Count);
+            bool trained;
+            int iteration = 0;
+            double performanceOnOneBefore = -1;
+            double performance = -1;
+            List<double> performances;
+            do
+            {
+                performances = new List<double>(inputs.Count);
+                var setsTrained = inputs.Count;
+                trained = true;
+                performanceOnOneBefore = CalculatePerformance();
+                for (int i = 0; i < inputs.Count; i++)
+                {
+                    performances.Add(CalculatePerformance());
+                    ChangeData(inputs[i], expectedResults[i]);
+                    var setTrained = performances[i] >= performanceThreshold;
+                    trained &= setTrained;
+                    if (setTrained)
+                        setsTrained--;
+                    UpdateAdjustment();
+                }
+                AdjustCumulatedWeights();
+                ResetValues();
+                ResetDerrivates();
+                performance = CalculatePerformance();
+                var performanceIncreased = performance > performanceOnOneBefore;
+                var performanceIncreaseUnderThreshold = performance - performanceOnOneBefore < 0.0000000001;
+                if (performanceIncreased && performanceIncreaseUnderThreshold) //+2
+                    Link.RenewalFactor = 0.000001;
+                else
+                    Link.RenewalFactor = 0; // 0.0000000000001;
+
+
+                iteration++;
+                if (iteration % 1000 == 0)
+                {
+                    Debug.WriteLine("Iteration: " + iteration++ + " performance:" + CalculatePerformance() + "Performance average" + performances.Sum() / performances.Count + " Sets untrained:" + setsTrained);
+                    ComputeResultsAndConfidence(iteration, this, testData);
+                }
+
+                if (iteration % iterationLimit == 0)
+                    Link.RenewalFactor = 1;
+
+            }
+            while (!trained);
+            Debug.WriteLine("Iteration: " + iteration);
+            return iteration;
+        }
+
+        private void ComputeResultsAndConfidence(int iteration, NeuralNet net, Reading testData)
+        {
+            var testResultsPath = @"C:\Users\Serban\Pictures\20+\testData\zIntermediateDataTestsPerformance.txt";
+            var confidencePath = @"C:\Users\Serban\Pictures\20+\testData\zIntermediateDataTestsConfidence.txt";
+            string results = "Iteration: " + iteration + Environment.NewLine;
+            string confidence = "Iteration: " + iteration + Environment.NewLine;
+            double averagePerformance = 0;
+            double averageConfidence = 0;
+
+            for (int testSet = 0; testSet < testData.InputValues.Count; testSet++)
+            {
+                net.ChangeData(testData.InputValues[testSet], testData.ExpectedResults[testSet]);
+                results += net.CalculatePerformance() + " ";
+                confidence += net.CalculateConfidence() + " ";
+                averagePerformance += CalculatePerformance();
+                averageConfidence += CalculateConfidence();
+            }
+            averagePerformance /= testData.InputValues.Count;
+            averageConfidence /= testData.InputValues.Count;
+
+            results += Environment.NewLine +
+                "Average performance: " + averagePerformance +
+                Environment.NewLine;
+
+            confidence += Environment.NewLine +
+                "Average confidence: " + averageConfidence +
+                Environment.NewLine;
+
+            File.AppendAllText(testResultsPath, results);
+            File.AppendAllText(confidencePath, confidence);
+        }
+
+        public int Train(List<List<double>> inputs, List<List<double>> expectedResults, double performanceThreshold, int iterationLimit)
+        {
+            Contract.Equals(inputs.Count, expectedResults.Count);
+            bool trained;
+            int iteration = 0;
+            double performanceBefore = -1;
+            double performance = -1;
+            do
+            {
+                //   Debug.WriteLine("Iteration: " + iteration++ + " performance:" + CalculatePerformance());
+                var setsTrained = inputs.Count;
+                trained = true;
+                performanceBefore = CalculatePerformance();
+                for (int i = 0; i < inputs.Count; i++)
+                {
+                    ChangeData(inputs[i], expectedResults[i]);
+                    var setTrained = performanceBefore >= performanceThreshold;
+                    trained &= setTrained;
+                    if (setTrained)
+                        setsTrained--;
+                    Learn();
+
+                }
+                
+                iteration++;
+                if (iteration % 100 == 0)
+                    Debug.WriteLine("Epoch: " + iteration++ + " performance:" + CalculatePerformance() + " Sets untrained:" + setsTrained);
+
+                if (iteration % iterationLimit == 0)
                     Link.RenewalFactor = 1;
 
             }
@@ -227,7 +354,8 @@ namespace Net
                 ResetValuesParallel();
                 ResetDerrivatesParallel();
                 iteration++;
-
+                if (iteration % 1000 == 0)
+                    Debug.WriteLine("Iteration: " + iteration++ + " performance:" + CalculatePerformance());
             }
             while (!trained);
             Debug.WriteLine("Iteration: " + iteration);
@@ -322,9 +450,9 @@ namespace Net
             for (int i = 0; i < _results.Count; i++)
             {
                 if(_results[i].ExpectedValue > 0.5)
-                    confidence = _results[i].Value;
+                    confidence = 0.8 - Math.Abs(0.9 -_results[i].Value); //0.8 to take out that 0.1
 
-                wrongConfidence += _results[i].Value;
+                wrongConfidence += Math.Abs(_results[i].Value-0.1);
             }
             return confidence / wrongConfidence;
         }
